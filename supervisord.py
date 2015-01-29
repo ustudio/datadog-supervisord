@@ -1,4 +1,5 @@
 import time
+import re
 
 from checks import AgentCheck
 
@@ -47,14 +48,29 @@ class SupervisordCheck(AgentCheck):
             AgentCheck.UNKNOWN: 0
         }
 
-        # Report service checks and uptime for each process
+        proc_regex = instance.get('proc_regex')
         proc_names = instance.get('proc_names')
-        if proc_names and len(proc_names):
-            processes = [server.supervisor.getProcessInfo(p) for p in proc_names]
-        else:
-            processes = server.supervisor.getAllProcessInfo()
+        processes = server.supervisor.getAllProcessInfo()
+        monitored_processes = []
 
-        for proc in processes:
+        # default to all processes if no process filters are configured
+        if not proc_regex and not proc_names:
+            monitored_processes = processes
+
+        # Add regex matches to process list
+        if proc_regex and len(proc_regex):
+            patterns = '(?:%s)' % '|'.join(proc_regex)
+            for process in processes:
+                if re.match(patterns, process) and process not in monitored_processes:
+                    monitored_processes.append(server.supervisor.getProcessInfo(process))
+
+        # Add explicit matches to process list
+        if proc_names and len(proc_names):
+            for process in proc_names:
+                if process not in monitored_processes:
+                    monitored_processes.append(server.supervisor.getProcessInfo(process))
+
+        for proc in monitored_processes:
             proc_name = proc['name']
             tags = ['supervisord',
                     'server:%s' % server_name,

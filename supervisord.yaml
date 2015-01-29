@@ -6,6 +6,8 @@ instances:
       port: 9001
       user: user # optional
       pass: pass # optional
+      proc_regex: # optional. Will monitor all processes that match regular expression
+        - "mygroup:myprocess-??$"
       proc_names: # optional. will monitor all processes if not specified
        - apache2
        - custom_app
