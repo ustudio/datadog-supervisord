@@ -60,7 +60,6 @@ class SupervisordCheck(AgentCheck):
         # Add regex matches to process list
         if proc_regex and len(proc_regex):
             patterns = '(?:%s)' % '|'.join(proc_regex)
-            print patterns
             for process in processes:
                 if re.match(patterns, process['name']) and process not in monitored_processes:
                     monitored_processes.append(process)
