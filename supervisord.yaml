@@ -9,8 +9,8 @@ instances:
       proc_regex: # optional. Will monitor all processes that match regular expression
         - 'mygroup:myprocess-\d\d$'
       proc_names: # optional. Will monitor matching process. Combines with proc_regex matches.
-       - apache2
-       - custom_app
-       - etc
+        - apache2
+        - custom_app
+        - etc
     - name: server1
-      etc
+      ...etc...
