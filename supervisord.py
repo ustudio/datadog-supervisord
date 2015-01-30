@@ -67,9 +67,9 @@ class SupervisordCheck(AgentCheck):
 
         # Add explicit matches to process list
         if proc_names and len(proc_names):
-            for process in proc_names:
-                if process not in monitored_processes:
-                    monitored_processes.append(server.supervisor.getProcessInfo(process))
+            for proc_name in proc_names:
+                if proc_name not in monitored_processes:
+                    monitored_processes.append(server.supervisor.getProcessInfo(proc_name))
 
         for proc in monitored_processes:
             proc_name = proc['name']
