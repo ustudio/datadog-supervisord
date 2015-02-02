@@ -54,20 +54,16 @@ class SupervisordCheck(AgentCheck):
         proc_names = instance.get('proc_names', [])
         monitored_processes = []
 
-        if not len(proc_regex) and not len(proc_names):
+        if len(proc_regex) == 0 and len(proc_names) == 0:
             monitored_processes = processes
 
-        if len(proc_regex):
-            for pattern, process in itertools.product(proc_regex, processes):
-                if re.match(pattern, process['name']):
-                    if process not in monitored_processes:
-                        monitored_processes.append(process)
+        for pattern, process in itertools.product(proc_regex, processes):
+            if re.match(pattern, process['name']) and process not in monitored_processes:
+                monitored_processes.append(process)
 
-        if len(proc_names):
-            for process in processes:
-                if process['name'] in proc_names:
-                    if process not in monitored_processes:
-                        monitored_processes.append(process)
+        for process in processes:
+            if process['name'] in proc_names and process not in monitored_processes:
+                monitored_processes.append(process)
 
         for proc in monitored_processes:
             proc_name = proc['name']
