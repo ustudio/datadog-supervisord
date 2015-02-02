@@ -48,27 +48,14 @@ class SupervisordCheck(AgentCheck):
             AgentCheck.UNKNOWN: 0
         }
 
-        proc_regex = instance.get('proc_regex')
-        proc_names = instance.get('proc_names')
         processes = server.supervisor.getAllProcessInfo()
-        monitored_processes = []
+        proc_regex = instance.get('proc_regex', [])
+        proc_names = instance.get('proc_names', [])
 
-        # default to all processes if no process filters are configured
-        if not proc_regex and not proc_names:
+        if len(proc_regex) or len(proc_names):
+            monitored_processes = self.filtered_processes(processes, proc_regex + proc_names)
+        else:
             monitored_processes = processes
-
-        # Add regex matches to process list
-        if proc_regex and len(proc_regex):
-            patterns = '(?:%s)' % '|'.join(proc_regex)
-            for process in processes:
-                if re.match(patterns, process['name']) and process not in monitored_processes:
-                    monitored_processes.append(process)
-
-        # Add explicit matches to process list
-        if proc_names and len(proc_names):
-            for proc_name in proc_names:
-                if proc_name not in monitored_processes:
-                    monitored_processes.append(server.supervisor.getProcessInfo(proc_name))
 
         for proc in monitored_processes:
             proc_name = proc['name']
@@ -99,6 +86,15 @@ class SupervisordCheck(AgentCheck):
         password = instance.get('pass', None)
         auth = '%s:%s@' % (user, password) if user and password else ''
         return xmlrpclib.Server('http://%s%s:%s/RPC2' % (auth, host, port))
+
+    def filtered_processes(self, processes, filters):
+        matched_processes = set()
+        patterns = '(?:%s)' % '|'.join(filters)
+
+        for process in processes:
+            if re.match(patterns, process['name']):
+                matched_processes.add(process['name'])
+        return [process for process in processes if process['name'] in matched_processes]
 
     def _extract_uptime(self, proc):
         desc = proc['description']
