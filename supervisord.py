@@ -1,5 +1,6 @@
 import time
 import re
+import itertools
 
 from checks import AgentCheck
 
@@ -51,11 +52,22 @@ class SupervisordCheck(AgentCheck):
         processes = server.supervisor.getAllProcessInfo()
         proc_regex = instance.get('proc_regex', [])
         proc_names = instance.get('proc_names', [])
+        monitored_processes = []
 
-        if len(proc_regex) or len(proc_names):
-            monitored_processes = self.filtered_processes(processes, proc_regex + proc_names)
-        else:
+        if not len(proc_regex) and not len(proc_names):
             monitored_processes = processes
+
+        if len(proc_regex):
+            for pattern, process in itertools.product(proc_regex, processes):
+                if re.match(pattern, process['name']):
+                    if process not in monitored_processes:
+                        monitored_processes.append(process)
+
+        if len(proc_names):
+            for process in processes:
+                if process['name'] in proc_names:
+                    if process not in monitored_processes:
+                        monitored_processes.append(process)
 
         for proc in monitored_processes:
             proc_name = proc['name']
@@ -86,15 +98,6 @@ class SupervisordCheck(AgentCheck):
         password = instance.get('pass', None)
         auth = '%s:%s@' % (user, password) if user and password else ''
         return xmlrpclib.Server('http://%s%s:%s/RPC2' % (auth, host, port))
-
-    def filtered_processes(self, processes, filters):
-        matched_processes = set()
-        patterns = '(?:%s)' % '|'.join(filters)
-
-        for process in processes:
-            if re.match(patterns, process['name']):
-                matched_processes.add(process['name'])
-        return [process for process in processes if process['name'] in matched_processes]
 
     def _extract_uptime(self, proc):
         desc = proc['description']
